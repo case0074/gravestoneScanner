@@ -3,129 +3,83 @@
  * https://github.com/facebook/react-native
  *
  * @format
+ * @flow strict-local
  */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
-
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
+import React, {useState, useEffect} from 'react';
+import {StyleSheet, View, Text, Button, PermissionsAndroid} from 'react-native';
+import Geolocation from 'react-native-geolocation-service';
+// Function to get permission for location
+const requestLocationPermission = async () => {
+  try {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      {
+        title: 'Geolocation Permission',
+        message: 'Can we access your location?',
+        buttonNeutral: 'Ask Me Later',
+        buttonNegative: 'Cancel',
+        buttonPositive: 'OK',
+      },
+    );
+    console.log('granted', granted);
+    if (granted === 'granted') {
+      console.log('You can use Geolocation');
+      return true;
+    } else {
+      console.log('You cannot use Geolocation');
+      return false;
+    }
+  } catch (err) {
+    return false;
+  }
+};
+const App = () => {
+  // state to hold location
+  const [location, setLocation] = useState<Geolocation.GeoPosition | null>(null);
+  // function to check permissions and get Location
+  const getLocation = () => {
+    const result = requestLocationPermission();
+    result.then(res => {
+      console.log('res is:', res);
+      if (res) {
+        Geolocation.getCurrentPosition(
+          position => {
+            console.log(position);
+            setLocation(position);
           },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
+          error => {
+            // See error code charts below.
+            console.log(error.code, error.message);
+            setLocation(null);
           },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+          {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+        );
+      }
+    });
+    console.log(location);
   };
-
-  /*
-   * To keep the template simple and small we're adding padding to prevent view
-   * from rendering under the System UI.
-   * For bigger apps the reccomendation is to use `react-native-safe-area-context`:
-   * https://github.com/AppAndFlow/react-native-safe-area-context
-   *
-   * You can read more about it here:
-   * https://github.com/react-native-community/discussions-and-proposals/discussions/827
-   */
-  const safePadding = '5%';
-
   return (
-    <View style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        style={backgroundStyle}>
-        <View style={{paddingRight: safePadding}}>
-          <Header/>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingHorizontal: safePadding,
-            paddingBottom: safePadding,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+    <View style={styles.container}>
+      <Text>Welcome!</Text>
+      <View
+        style={{marginTop: 10, padding: 10, borderRadius: 10, width: '40%'}}>
+        <Button title="Get Location" onPress={getLocation} />
+      </View>
+      <Text>Latitude: {location ? location.coords.latitude : null}</Text>
+      <Text>Longitude: {location ? location.coords.longitude : null}</Text>
+      <View
+        style={{marginTop: 10, padding: 10, borderRadius: 10, width: '40%'}}>
+        <Button title="Send Location" />
+      </View>
     </View>
   );
-}
-
+};
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
-
 export default App;
